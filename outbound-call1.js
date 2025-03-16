@@ -165,19 +165,21 @@ fastify.register(async fastifyInstance => {
                   console.log("✅ [ElevenLabs] Received initiation metadata");
                   break;
 
-                case "audio":
-                  if (streamSid && message.audio?.chunk) {
-                    const audioData = {
-                      event: "media",
-                      streamSid,
-                      media: {
-                        payload: message.audio.chunk,
-                      },
-                    };
-                    ws.send(JSON.stringify(audioData));
-                  } else {
-                    console.warn("⚠️ [ElevenLabs] Received audio but no StreamSid.");
-                  }
+case "audio":
+  if (streamSid) {
+    if (message.audio?.chunk) {
+      const audioData = {
+        event: "media",
+        streamSid,
+        media: {
+          payload: message.audio.chunk,
+        },
+      };
+      ws.send(JSON.stringify(audioData));
+    }
+  } else {
+    console.warn("⚠️ [ElevenLabs] Received audio but no StreamSid.");
+  }
                   break;
 
                 case "agent_response":
