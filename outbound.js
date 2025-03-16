@@ -325,8 +325,6 @@ fastify.register(async fastifyInstance => {
 });
 
 // Start the Fastify server
-const PORT = process.env.PORT || 10000;
-
 fastify.listen({ port: PORT, host: "0.0.0.0" }, err => {
   if (err) {
     console.error("Error starting server:", err);
