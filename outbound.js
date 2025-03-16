@@ -5,10 +5,9 @@ import fastifyFormBody from "@fastify/formbody";
 import fastifyWs from "@fastify/websocket";
 import Twilio from "twilio";
 
-// Load environment variables from .env file
+// Load environment variables
 dotenv.config();
 
-// Check for required environment variables
 const {
   ELEVENLABS_API_KEY,
   ELEVENLABS_AGENT_ID,
@@ -127,6 +126,7 @@ fastify.register(async fastifyInstance => {
     let callSid = null;
     let elevenLabsWs = null;
     let customParameters = null;
+    let audioBuffer = [];
 
     // Handle WebSocket errors
     ws.on("error", console.error);
@@ -140,7 +140,6 @@ fastify.register(async fastifyInstance => {
         elevenLabsWs.on("open", () => {
           console.log("✅ [ElevenLabs] Connected to Conversational AI");
 
-          // Send initial configuration with prompt and first message
           const initialConfig = {
             type: "conversation_initiation_client_data",
             conversation_config_override: {
@@ -174,7 +173,8 @@ fastify.register(async fastifyInstance => {
                   ws.send(JSON.stringify(audioData));
                   console.log("🔊 [Twilio] Sending AI-generated speech to call.");
                 } else {
-                  console.log("⚠️ [ElevenLabs] Received audio but no StreamSid.");
+                  console.log("⚠️ [ElevenLabs] Buffering audio, waiting for streamSid.");
+                  audioBuffer.push(message.audio?.chunk || message.audio_event?.audio_base_64);
                 }
                 break;
 
@@ -208,46 +208,22 @@ fastify.register(async fastifyInstance => {
       }
     };
 
-    // Start the ElevenLabs WebSocket connection
-    setupElevenLabs();
-
-    // ✅ Handle messages from Twilio
     ws.on("message", message => {
       try {
         const msg = JSON.parse(message);
+        if (msg.event === "start") {
+          streamSid = msg.start.streamSid;
+          callSid = msg.start.callSid;
+          console.log(`✅ [Twilio] Stream started - StreamSid: ${streamSid}, CallSid: ${callSid}`);
 
-        switch (msg.event) {
-          case "start":
-            streamSid = msg.start.streamSid;
-            callSid = msg.start.callSid;
-            customParameters = msg.start.customParameters;
-            console.log(`✅ [Twilio] Stream started - StreamSid: ${streamSid}, CallSid: ${callSid}`);
-            break;
-
-          case "media":
-            if (elevenLabsWs?.readyState === WebSocket.OPEN) {
-              const audioMessage = { user_audio_chunk: msg.media.payload };
-              elevenLabsWs.send(JSON.stringify(audioMessage));
-            }
-            break;
-
-          case "stop":
-            console.log(`✅ [Twilio] Stream ${streamSid} ended`);
-            elevenLabsWs?.close();
-            break;
+          while (audioBuffer.length > 0) {
+            const bufferedAudio = audioBuffer.shift();
+            ws.send(JSON.stringify({ event: "media", streamSid, media: { payload: bufferedAudio } }));
+          }
         }
       } catch (error) {
         console.error("❌ [Twilio] Error processing message:", error);
       }
     });
   });
-});
-
-// ✅ Start the Fastify server
-fastify.listen({ port: PORT, host: "0.0.0.0" }, err => {
-  if (err) {
-    console.error("❌ Error starting server:", err);
-    process.exit(1);
-  }
-  console.log(`🚀 [Server] Listening on port ${PORT}`);
 });
