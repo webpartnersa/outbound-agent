@@ -221,24 +221,31 @@ case "audio":
           }
 
           switch (msg.event) {
-            case "start":
-              streamSid = msg.start.streamSid;
-              callSid = msg.start.callSid;
-              customParameters = msg.start.customParameters;
-              console.log(`✅ [Twilio] Stream started (StreamSid: ${streamSid}, CallSid: ${callSid})`);
-              break;
+case "start":
+  streamSid = msg.start.streamSid;
+  callSid = msg.start.callSid;
+  customParameters = msg.start.customParameters;
+  console.log(`✅ [Twilio] Stream started (StreamSid: ${streamSid}, CallSid: ${callSid})`);
+  break;
 
-            case "media":
-              if (elevenLabsWs?.readyState === WebSocket.OPEN) {
-                elevenLabsWs.send(JSON.stringify({ user_audio_chunk: msg.media.payload }));
-              }
-              break;
+case "audio":
+  if (!streamSid) {
+    console.warn("⚠️ [ElevenLabs] Received audio but no StreamSid. Retrying...");
+    return;
+  }
 
-            case "stop":
-              console.log(`🔴 [Twilio] Stream ${streamSid} ended`);
-              if (elevenLabsWs?.readyState === WebSocket.OPEN) {
-                elevenLabsWs.close();
-              }
+  if (message.audio?.chunk) {
+    const audioData = {
+      event: "media",
+      streamSid,
+      media: {
+        payload: message.audio.chunk,
+      },
+    };
+    console.log(`🔊 [Audio] Sending audio chunk to Twilio (StreamSid: ${streamSid})`);
+    ws.send(JSON.stringify(audioData));
+  }
+
               break;
           }
         } catch (error) {
