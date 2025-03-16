@@ -2,10 +2,10 @@
   "name": "outbound-agent",
   "version": "1.0.0",
   "description": "A Twilio & ElevenLabs AI agent.",
-  "main": "index.js",
+  "main": "outbound.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node outbound.js"
   },
   "dependencies": {
     "@fastify/websocket": "^8.0.0",
