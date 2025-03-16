@@ -1,11 +1,11 @@
 {
   "name": "outbound-agent",
   "version": "1.0.0",
-  "description": "A Twilio and ElevenLabs outbound AI agent.",
+  "description": "A Twilio & ElevenLabs AI agent.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "dependencies": {
     "@fastify/websocket": "^8.0.0",
@@ -17,3 +17,4 @@
     "node-fetch": "^3.3.0"
   }
 }
+
